@@ -21,7 +21,7 @@ npx electron-build-slim --win          # instead of: electron-builder --win
 | Docs, tests, C/C++ sources and build leftovers inside dependencies | on | none |
 | Native binaries for other platforms/architectures (`prebuilds/<os>-<arch>`) | on | none |
 | Installer compression `store` → `normal` | on (`standard`) | none, the installer is unpacked once at install time |
-| Chromium UI locales (`--slim-languages`) | off | Chromium's own menus/dialogs lose those languages |
+| Chromium locales (`--slim-languages`) | off | the app's locale (`app.getLocale()`, `navigator.language`) falls back to a kept language, so apps that pick their language from it may start in another language |
 | Windows WebGPU-only DLLs (`--slim-strip-webgpu`) | off | breaks WebGPU if the app uses it |
 
 **Never done:** changing the compression of formats that decompress on every launch (AppImage, snap), turning off `asar`, UPX, or deleting Chromium runtime files such as swiftshader, `icudtl.dat` or `*.pak`.
@@ -40,7 +40,7 @@ yarn add -D electron-build-slim
 pnpm add -D electron-build-slim
 ```
 
-Tested with Node.js 20.12+ and electron-builder 26.
+Tested with Node.js 20.12+ and electron-builder 24 and 26. With electron-builder older than 26, nested copies of dropped packages (`node_modules/<dropped>/node_modules/*`) may still be shipped, so savings are smaller; the tool prints a note.
 
 ## Usage
 
@@ -66,7 +66,7 @@ The tool never rewrites your config. It runs electron-builder with your config p
 | Option | Description |
 |---|---|
 | `--slim-level <safe\|standard\|max>` | Default `standard`. See below. |
-| `--slim-languages en-US,ko` | Keep only these Chromium UI locales (electron-builder `electronLanguages`). |
+| `--slim-languages en-US,ko` | Keep only these Chromium locales (electron-builder `electronLanguages`). This also changes `app.getLocale()` and `navigator.language` for users whose system language was removed. |
 | `--slim-strip-webgpu` | Remove `dxcompiler.dll` and `dxil.dll` on Windows. Only if the app does not use WebGPU. |
 | `--slim-keep a,b` | Always ship these dependencies, e.g. modules loaded with `require(someVariable)`. |
 | `--slim-entries dir1,dir2` | Where the app code lives. Default: `out/main` + `out/preload` (electron-vite), otherwise the whole project except `node_modules`. |
@@ -85,6 +85,7 @@ NSIS installers are packed with 7z, and electron-builder 26 uses the same 7z lev
 After the build, the tool loads every root dependency that made it into the output inside the packaged Electron runtime (`ELECTRON_RUN_AS_NODE`). Errors that mean a file was removed (`Cannot find module`, `Could not locate the bindings file`, `No native build was found`) fail the build.
 
 - `Cannot find module 'electron'` is only a warning, because `electron` is built in at real runtime.
+- A missing package that a regular electron-builder build would not ship either (for example a peer dependency that is only a devDependency) is a warning, not a failure.
 - Load errors of native modules for another OS (for example a Linux-only module on Windows) are warnings too.
 - It runs only for outputs this machine can execute (same OS and architecture). macOS outputs are not checked yet.
 

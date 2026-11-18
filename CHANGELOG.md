@@ -4,6 +4,18 @@ All notable changes to this project are documented here. This project follows [S
 
 ## [Unreleased]
 
+### Fixed
+
+- `--slim-strip-webgpu` failed on electron-builder 24 because it used the `afterExtract` hook (added in 25). It now chains `afterPack`.
+- Config validation errors no longer clear the tool cache and retry.
+- The smoke check no longer fails on packages a regular build does not ship either (such as peers that are only devDependencies).
+
+### Added
+
+- `productionPackages()` export.
+- A note when electron-builder is older than 26, which can still ship nested copies of dropped packages.
+- Docs: `--slim-languages` also changes the app's locale.
+
 ## [0.1.0]
 
 First public release.

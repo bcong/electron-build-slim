@@ -280,6 +280,15 @@ const analyze = ({ root = process.cwd(), targets = hostTarget(), entries, keep =
     };
 };
 
+// Package names a regular electron-builder build ships: root dependencies (+optional) and their children, without peers.
+const productionPackages = (root = process.cwd()) =>
+    new Set(
+        closure(root, rootDependencies(readJson(path.join(root, "package.json"))), {
+            withPeers: false,
+            neverShip: new Set(),
+        }).values(),
+    );
+
 const hostArch = () => (process.arch === "arm" ? "armv7l" : process.arch);
 const hostPlatform = () => Object.keys(NODE_PLATFORM).find((key) => NODE_PLATFORM[key] === process.platform);
 const hostTarget = () => ({ [hostPlatform()]: [hostArch()] });
@@ -333,4 +342,14 @@ const packagerIgnore = (options = {}) => {
     ];
 };
 
-module.exports = { analyze, pruneFiles, packagerIgnore, targetsFromArgv, hostPlatform, hostArch, NODE_PLATFORM, JUNK };
+module.exports = {
+    analyze,
+    productionPackages,
+    pruneFiles,
+    packagerIgnore,
+    targetsFromArgv,
+    hostPlatform,
+    hostArch,
+    NODE_PLATFORM,
+    JUNK,
+};
