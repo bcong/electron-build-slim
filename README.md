@@ -6,6 +6,8 @@
 
 Ship smaller Electron apps without touching how they run.
 
+**Project site and benchmark results: <https://bcong.github.io/electron-build-slim/>**
+
 `electron-build-slim` is a drop-in replacement for the `electron-builder` command. It keeps your existing config, packages only the `node_modules` your app actually loads, checks that the packaged app can still load them, and retries once with a fresh tool cache if the build fails. Anything that could change startup speed or behavior is opt-in.
 
 ```bash

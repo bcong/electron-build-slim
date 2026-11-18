@@ -14,7 +14,7 @@
     ],
     "license": "MIT",
     "author": "bcong",
-    "homepage": "https://github.com/bcong/electron-build-slim#readme",
+    "homepage": "https://bcong.github.io/electron-build-slim/",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/bcong/electron-build-slim.git"
