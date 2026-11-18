@@ -1,0 +1,37 @@
+name: Bug report
+description: The build fails, or the slimmed build behaves differently from the regular one
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you expected, and what happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      placeholder: npx electron-build-slim --win --x64
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: Output of `npx electron-build-slim plan`
+      render: text
+  - type: textarea
+    id: log
+    attributes:
+      label: Error log
+      description: The `[slim]` lines and the electron-builder error
+      render: text
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: "electron-build-slim 0.1.0, electron-builder 26.x, Electron 41, Node 24, Windows 11, npm/yarn/pnpm"
+    validations:
+      required: true

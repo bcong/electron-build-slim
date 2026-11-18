@@ -1,0 +1,15 @@
+name: Feature request
+description: Propose a new pruning rule or another build tool to support
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Why it does not affect startup speed or behavior, and how much it saves (measured)

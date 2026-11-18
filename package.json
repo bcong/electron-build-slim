@@ -1,0 +1,49 @@
+{
+    "name": "electron-build-slim",
+    "version": "0.1.0",
+    "description": "Drop-in electron-builder wrapper that ships only the node_modules your Electron app actually loads, verifies the result, and retries with a fresh tool cache on failure.",
+    "keywords": [
+        "electron",
+        "electron-builder",
+        "electron-packager",
+        "electron-forge",
+        "bundle-size",
+        "node_modules",
+        "prune",
+        "installer"
+    ],
+    "license": "MIT",
+    "author": "bcong",
+    "homepage": "https://github.com/bcong/electron-build-slim#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/bcong/electron-build-slim.git"
+    },
+    "bugs": {
+        "url": "https://github.com/bcong/electron-build-slim/issues"
+    },
+    "main": "index.cjs",
+    "bin": {
+        "electron-build-slim": "bin/electron-build-slim.cjs"
+    },
+    "files": [
+        "index.cjs",
+        "bin",
+        "lib",
+        "skills"
+    ],
+    "scripts": {
+        "test": "node --test \"test/**/*.test.cjs\""
+    },
+    "engines": {
+        "node": ">=20.12"
+    },
+    "peerDependencies": {
+        "electron-builder": ">=26"
+    },
+    "peerDependenciesMeta": {
+        "electron-builder": {
+            "optional": true
+        }
+    }
+}
