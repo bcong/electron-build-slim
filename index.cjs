@@ -145,7 +145,9 @@ const closure = (root, names, { withPeers, neverShip }) => {
         found.set(dir, name);
         const pkg = readJson(path.join(dir, "package.json"));
         const deps = { ...pkg.dependencies, ...pkg.optionalDependencies, ...(withPeers ? pkg.peerDependencies : {}) };
-        for (const dep of Object.keys(deps)) queue.push([dep, dir]);
+        // pnpm은 node_modules/<이름>이 .pnpm 안 실제 폴더로 가는 링크라서, 하위 의존성은 실제 경로에서 찾는다.
+        const realDir = fs.realpathSync(dir);
+        for (const dep of Object.keys(deps)) queue.push([dep, realDir]);
     }
     return found;
 };
