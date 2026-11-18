@@ -1,0 +1,15 @@
+name: 기능 제안 / Feature request
+description: 새 정리 규칙이나 지원할 빌드 도구 제안
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: 제안 / Proposal
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 근거 / Evidence
+      description: 실행 속도와 기능에 영향이 없다는 근거와, 줄어드는 크기(측정값)

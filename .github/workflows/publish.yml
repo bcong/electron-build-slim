@@ -1,0 +1,25 @@
+name: publish
+
+# GitHub 릴리스를 게시하면 npm에 올린다. npm Trusted Publishing(OIDC)을 쓰므로 토큰이나 OTP가 필요 없다.
+# npmjs.com 패키지 설정 > Trusted Publisher에 이 저장소와 publish.yml을 등록해 둬야 한다.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm test
+      - name: Check version matches tag
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - run: npm publish --provenance --access public
