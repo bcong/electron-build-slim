@@ -114,6 +114,20 @@ test("productionPackages lists what a regular build ships, without peers", () =>
     assert.ok(!shipped.has("electron"));
 });
 
+test("electron-vite: keeps packages a nodeIntegration renderer requires, not bundled ones", () => {
+    const root = makeProject({
+        "package.json": pkg("app", { dependencies: { used: "1", "renderer-native": "1", react: "1" } }),
+        "out/main/index.js": 'require("used");',
+        "out/renderer/assets/index.js": 'const cue = window.require("renderer-native"); /* bundled: react */',
+        "node_modules/used/package.json": pkg("used"),
+        "node_modules/renderer-native/package.json": pkg("renderer-native"),
+        "node_modules/react/package.json": pkg("react"),
+    });
+    const result = analyze({ root, targets: { win: ["x64"] } });
+    assert.deepEqual(result.keep, ["renderer-native", "used"]);
+    assert.deepEqual(result.drop, ["react"]);
+});
+
 test("reads targets from electron-builder CLI arguments", () => {
     assert.deepEqual(targetsFromArgv(["--linux", "--arm64"]), { linux: ["arm64"] });
     assert.deepEqual(targetsFromArgv(["-wl", "--x64"]), { win: ["x64"], linux: ["x64"] });

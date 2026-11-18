@@ -206,7 +206,7 @@ steps:
 
 - **The analysis is string-based.** Modules loaded through a computed name are not found; add them with `--slim-keep`. The smoke check only catches files missing when a package is first loaded; code paths loaded later need a real run of the app.
 - **Unbundled apps** (packaged straight from sources) are scanned as a whole, so renderer-only dependencies may stay. It errs on the side of keeping.
-- **The renderer is not analyzed.** If the renderer loads node modules directly through `nodeIntegration`, add them with `--slim-keep`.
+- **The renderer is only checked for explicit `require("…")` calls** (in electron-vite's `out/renderer`). Other ways of loading node modules from a `nodeIntegration` renderer need `--slim-keep`.
 - **Package managers:** verified with npm and yarn (`node_modules` linker). Yarn PnP is not supported.
 - **macOS:** analysis and exclusions are the same, but builds and smoke checks have not been verified on macOS.
 
