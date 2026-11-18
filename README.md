@@ -24,14 +24,7 @@ npx electron-build-slim --win          # electron-builder --win 대신
 
 얼마나 줄어드는지는 앱마다 다릅니다. 의존성이 많고 잘못 들어간 패키지가 큰 앱은 많이 줄고, 의존성이 거의 없는 앱은 거의 그대로입니다.
 
-## 실측 결과 (Windows x64, NSIS, Electron 41, 각 1회 빌드)
-
-| 앱 | 기존 electron-builder | `standard` (기본) | `standard` + 언어 2개 + WebGPU DLL 제거 |
-|---|---|---|---|
-| IoT 대시보드 앱 (네이티브 모듈 9개, electron-vite) | 225.2 MB | 112.2 MB | 97.1 MB |
-| 샘플 앱 (의존성 3개, 번들러 없음) | 99.8 MB | 99.6 MB | 측정 안 함 |
-
-대시보드 앱에서는 `electron` npm 패키지(343 MB, 압축 전)가 `@electron-toolkit/*`의 peer 의존성으로 앱 안에 한 벌 더 들어가 있었습니다. 모든 결과물이 스모크 검사를 통과했습니다. 대시보드 앱(97.1 MB)과 샘플 앱은 실제로 실행해서 첫 화면과 모듈 동작도 확인했습니다.
+흔한 원인은 `@electron-toolkit/*` 같은 패키지의 peer 의존성 때문에 `electron` npm 패키지(Windows 기준 압축 전 약 340 MB)가 앱 안에 한 벌 더 들어가는 경우입니다.
 
 ## 설치
 
@@ -79,7 +72,7 @@ electron-builder 인자는 모두 그대로 넘어갑니다(`--config`, `--dir`,
 | `standard` | `safe` + 설치 파일 압축이 `store`면 `normal`로 |
 | `max` | `standard` + `compression: maximum`. Linux는 AppImage가 xz가 되어 실행이 느려지므로 기존 값 유지 |
 
-NSIS 설치 파일은 7z로 묶이는데, electron-builder 26에서는 `normal`과 `maximum`이 같은 7z 압축 수준(`-mx=9`)을 씁니다. 그래서 NSIS만 만든다면 `max`와 `standard`의 결과가 같습니다(위 대시보드 앱에서 4바이트 차이). `max`는 zip 같은 다른 형식에서 차이가 납니다.
+NSIS 설치 파일은 7z로 묶이는데, electron-builder 26에서는 `normal`과 `maximum`이 같은 7z 압축 수준(`-mx=9`)을 씁니다. 그래서 NSIS만 만든다면 `max`와 `standard`의 결과가 사실상 같습니다. `max`는 zip 같은 다른 형식에서 차이가 납니다.
 
 ### 빌드 후 스모크 검사
 
@@ -212,4 +205,4 @@ steps:
 
 ## 라이선스
 
-MIT
+[MIT](LICENSE). 포크, 수정, 재배포, 상업적 이용을 포함해 어떤 용도로든 자유롭게 쓰고 고칠 수 있습니다. 라이선스 고지(LICENSE 파일)만 함께 남겨 주세요.
