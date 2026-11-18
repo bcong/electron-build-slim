@@ -1,151 +1,408 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-type="software" data-radius="sharp">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>electron-build-slim</title>
-<meta name="description" content="Ship smaller Electron apps without touching how they run. A drop-in replacement for the electron-builder command.">
+<title>electron-build-slim: leftover-file cleanup for Electron builds</title>
+<meta name="description" content="A drop-in replacement for the electron-builder command that removes dependencies and files your Electron app never loads, then checks the packaged app still starts.">
+<meta name="page-type" content="software">
+<meta name="site-kind" content="software">
+<meta property="og:title" content="electron-build-slim">
+<meta property="og:description" content="Removes dependencies and files your Electron app never loads. Savings depend on the project.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0d14" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23111'/%3E%3Cpath d='M9 10h14M9 16h9M9 22h5' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  /* Palette: "Sheet and biro" (white, black type, one blue for links and the main button).
+     Dark: "Night and sky blue". Type: Geist + Geist Mono. Radius: sharp. */
   :root {
-    --bg: #fbfbf9; --surface: #ffffff; --text: #1c1d1f; --muted: #5d6168; --line: #e3e3de;
-    --accent: #2f6f4f; --accent-soft: #e5f0e9; --code-bg: #f2f2ee; --warn: #8a5a00;
+    --bg: #ffffff; --surface: #f4f4f4; --ink: #111111; --muted: #6b6b6b; --line: #e4e4e4;
+    --accent: #1a4be0; --accent-ink: #ffffff; --accent-soft: #e8edfc;
+    --field-bg: #111111; --field-ink: #ffffff; --field-muted: #a3a3a3; --field-line: #2a2a2a;
+    --term-bg: #111111; --term-ink: #f2f2f2; --term-muted: #8a8a8a; --term-accent: #8fb0ff;
+    --r: 3px;
+    --wrap: 1180px; --gutter: clamp(16px, 4vw, 40px);
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "Geist Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+    color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #121314; --surface: #1a1b1d; --text: #e9e9e6; --muted: #a2a5ab; --line: #2b2d30;
-      --accent: #7cc49b; --accent-soft: #1d2c24; --code-bg: #202225; --warn: #e2b04a;
+      --bg: #0a0d14; --surface: #131824; --ink: #e9edf3; --muted: #8891a1; --line: #1f2635;
+      --accent: #5ab9fc; --accent-ink: #0a0d14; --accent-soft: #12263a;
+      --field-bg: #131824; --field-ink: #e9edf3; --field-muted: #8891a1; --field-line: #232b3c;
+      --term-bg: #05070c; --term-ink: #e9edf3; --term-muted: #6f788a; --term-accent: #5ab9fc;
+      color-scheme: dark;
     }
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 1120px; margin: 0 auto; padding: 48px 16px 80px; }
-  header h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.1; margin: 0 0 12px; letter-spacing: -0.02em; }
-  header p.lead { font-size: 1.2rem; color: var(--muted); margin: 0 0 20px; max-width: 46rem; }
-  .links { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
-  .links a { text-decoration: none; color: var(--text); border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 8px; font-size: .95rem; }
-  .links a.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
-  h2 { font-size: 1.4rem; margin: 48px 0 12px; }
-  p { max-width: 46rem; }
-  code, pre { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .9rem; }
-  pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; margin: 12px 0; }
-  :not(pre) > code { background: var(--code-bg); padding: 1px 5px; border-radius: 5px; }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 24px 0 8px; }
-  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-  .stat b { display: block; font-size: 1.8rem; color: var(--accent); font-variant-numeric: tabular-nums; }
-  .stat span { color: var(--muted); font-size: .9rem; }
-  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  :root[data-theme="dark"] {
+    --bg: #0a0d14; --surface: #131824; --ink: #e9edf3; --muted: #8891a1; --line: #1f2635;
+    --accent: #5ab9fc; --accent-ink: #0a0d14; --accent-soft: #12263a;
+    --field-bg: #131824; --field-ink: #e9edf3; --field-muted: #8891a1; --field-line: #232b3c;
+    --term-bg: #05070c; --term-ink: #e9edf3; --term-muted: #6f788a; --term-accent: #5ab9fc;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-padding-top: 72px; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  code, pre, kbd { font-family: var(--mono); font-size: .9em; }
+  :not(pre) > code { background: var(--surface); padding: 1px 5px; border-radius: var(--r); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .skip { position: absolute; left: var(--gutter); top: -60px; background: var(--ink); color: var(--bg); padding: 10px 14px; z-index: 50; text-decoration: none; }
+  .skip:focus { top: 12px; }
+
+  .wrap { width: 100%; max-width: calc(var(--wrap) + var(--gutter) * 2); margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* Nav */
+  .nav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--line); }
+  .nav .wrap { display: flex; align-items: center; gap: 28px; height: 60px; }
+  .mark { white-space: nowrap; display: inline-flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -.01em; text-decoration: none; }
+  .mark svg { width: 20px; height: 20px; flex: none; }
+  .nav ul { display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; font-size: .92rem; color: var(--muted); }
+  .nav ul a { text-decoration: none; }
+  .nav .end { margin-left: auto; display: flex; gap: 10px; }
+
+  /* Links that draw their underline */
+  .ul { text-decoration: none; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .25s ease, color .2s; }
+  .ul:hover { background-size: 100% 1px; color: var(--ink); }
+
+  /* Buttons: one pair */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: var(--r); font: 500 .95rem/1 var(--sans); text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: transform .15s ease, background-color .2s, border-color .2s, box-shadow .2s; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(1px); transition-duration: .05s; }
+  .btn--main { background: var(--accent); color: var(--accent-ink); }
+  .btn--main:hover { box-shadow: 0 6px 18px -8px var(--accent); }
+  .btn--alt { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn--alt:hover { border-color: var(--ink); }
+  .nav .btn { min-height: 36px; padding: 0 14px; font-size: .88rem; }
+
+  /* Sections */
+  main > section { padding: clamp(72px, 10vw, 128px) 0; border-top: 1px solid var(--line); }
+  main > section.hero { border-top: 0; }
+  h1, h2, h3 { font-weight: 500; letter-spacing: -.03em; margin: 0; }
+  h2 { font-size: clamp(1.9rem, 3.6vw, 2.75rem); line-height: 1.08; max-width: 22ch; }
+  h2 .muted { color: var(--muted); }
+  .lede { color: var(--muted); font-size: 1.1rem; max-width: 40rem; margin: 18px 0 0; }
+
+  /* Hero */
+  .hero { min-height: calc(100svh - 61px); display: flex; align-items: center; padding: 56px 0 72px; }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(32px, 5vw, 72px); align-items: center; }
+  .hero h1 { font-size: clamp(2.4rem, 5.4vw, 4.1rem); line-height: 1.02; letter-spacing: -.045em; max-width: 13ch; }
+  .hero .sub { font-size: 1.15rem; color: var(--muted); margin: 22px 0 0; max-width: 34rem; }
+  .hero .fact { margin: 22px 0 0; font-size: .95rem; padding-left: 14px; border-left: 2px solid var(--accent); max-width: 34rem; }
+  .hero .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+  /* Terminal: the product itself */
+  .term { background: var(--term-bg); color: var(--term-ink); border-radius: 6px; overflow: hidden; box-shadow: 0 30px 60px -30px rgba(0,0,0,.45), 0 0 0 1px rgba(127,127,127,.18); }
+  .term__bar { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .term__bar i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.18); }
+  .term__bar span { margin-left: 8px; font: 400 .8rem/1 var(--mono); color: var(--term-muted); }
+  .term__bar button { margin-left: auto; background: transparent; color: var(--term-muted); border: 1px solid rgba(255,255,255,.14); border-radius: var(--r); font: 400 .78rem/1 var(--mono); padding: 6px 10px; min-height: 28px; cursor: pointer; transition: color .2s, border-color .2s; }
+  .term__bar button:hover { color: var(--term-ink); border-color: rgba(255,255,255,.4); }
+  .term pre { margin: 0; padding: 20px 20px 24px; overflow-x: auto; font-size: .88rem; line-height: 1.85; }
+  .term .p { color: var(--term-muted); user-select: none; }
+  .term .c { color: var(--term-muted); }
+  .term .k { color: var(--term-accent); }
+  .term .gap { display: block; height: .7em; }
+
+  /* Expectations */
+  .expect .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px clamp(32px, 6vw, 96px); align-items: start; }
+  .expect p { margin: 0 0 16px; max-width: 34rem; }
+  .expect p:last-child { margin-bottom: 0; }
+  .expect strong { font-weight: 600; }
+  .split-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; grid-column: 1 / -1; border-top: 1px solid var(--line); }
+  .split-list div { padding-top: 22px; }
+  .split-list h3 { font-size: 1rem; letter-spacing: -.01em; margin-bottom: 10px; }
+  .split-list ul { margin: 0; padding-left: 18px; color: var(--muted); }
+  .split-list li { margin: 4px 0; }
+
+  /* Results */
+  .results .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px 40px; margin-bottom: 40px; }
+  .results .head .lede { margin-top: 0; max-width: 30rem; }
+  .table-wrap { overflow-x: auto; border-top: 1px solid var(--ink); }
   table { border-collapse: collapse; width: 100%; font-size: .93rem; font-variant-numeric: tabular-nums; }
-  th, td { padding: 10px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  th { color: var(--muted); font-weight: 600; font-size: .85rem; }
-  tr:last-child td { border-bottom: 0; }
-  td.num { text-align: right; }
-  td a { color: var(--text); }
-  .gain { color: var(--accent); font-weight: 600; }
-  .bar { height: 6px; background: var(--accent-soft); border-radius: 3px; margin-top: 4px; min-width: 80px; }
-  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
-  .note { color: var(--muted); font-size: .9rem; }
-  ul.plain { padding-left: 20px; max-width: 46rem; }
-  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 16px; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
-  .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
-  .card p { margin: 0; color: var(--muted); }
-  footer { margin-top: 64px; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); padding-top: 16px; }
-  footer a { color: var(--muted); }
+  th, td { padding: 14px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { padding-left: 0; }
+  th:last-child, td:last-child { padding-right: 0; }
+  th { color: var(--muted); font-weight: 500; font-size: .82rem; }
+  tbody tr { transition: background-color .15s; }
+  tbody tr:hover { background: var(--surface); }
+  td.num, th.num { text-align: right; }
+  td .ver { color: var(--muted); font-size: .85em; margin-left: 4px; }
+  td a { text-decoration: none; }
+  td a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .saved { display: grid; grid-template-columns: 52px minmax(80px, 1fr); align-items: center; gap: 10px; min-width: 160px; }
+  .saved b { font-weight: 600; text-align: right; }
+  .saved .bar { height: 4px; background: var(--line); }
+  .saved .bar i { display: block; height: 100%; background: var(--accent); transform-origin: left; }
+  .zero b { color: var(--muted); font-weight: 400; }
+  .note { color: var(--muted); font-size: .88rem; max-width: 52rem; margin: 18px 0 0; }
+
+  /* Rows */
+  .rows { margin-top: 48px; border-top: 1px solid var(--ink); }
+  .row { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 12px 40px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+  .row h3 { font-size: 1.05rem; letter-spacing: -.015em; }
+  .row p { margin: 0; color: var(--muted); max-width: 46rem; }
+
+  /* Install */
+  .install .wrap { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(32px, 6vw, 96px); align-items: start; }
+  .code { background: var(--surface); border-radius: var(--r); padding: 18px 20px; overflow-x: auto; font-size: .88rem; line-height: 1.8; margin: 0 0 16px; }
+  .code .c { color: var(--muted); }
+
+  /* Benchmark notes */
+  .lessons ol { margin: 40px 0 0; padding: 0; list-style: none; counter-reset: l; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; border-top: 1px solid var(--ink); }
+  .lessons li { padding: 22px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .lessons li strong { display: block; color: var(--ink); font-weight: 500; margin-bottom: 4px; }
+
+  /* Footer */
+  footer { background: var(--field-bg); color: var(--field-ink); padding: 72px 0 40px; }
+  footer .top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 32px; padding-bottom: 48px; border-bottom: 1px solid var(--field-line); }
+  footer .big { font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -.03em; line-height: 1.15; max-width: 22ch; margin: 0; font-weight: 500; }
+  footer .big code { background: transparent; padding: 0; color: var(--field-muted); font-size: .85em; }
+  footer .top .btn--main { background: var(--field-ink); color: var(--field-bg); }
+  footer nav ul { display: flex; flex-wrap: wrap; gap: 8px 28px; list-style: none; margin: 0; padding: 0; color: var(--field-muted); }
+  footer nav a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
+  footer nav a:hover { color: var(--field-ink); }
+  footer .legal { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-top: 20px; font-size: .85rem; color: var(--field-muted); }
+  footer .legal p { margin: 0; }
+
+  /* Entrance, once */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-enter] > * { animation: enter .7s cubic-bezier(.2,.7,.2,1) both; }
+    [data-enter] > *:nth-child(2) { animation-delay: .12s; }
+    .saved .bar i { animation: grow .9s cubic-bezier(.2,.7,.2,1) both .3s; }
+    @keyframes enter { from { opacity: 0; transform: translateY(14px); } }
+    @keyframes grow { from { transform: scaleX(0); } }
+  }
+
+  @media (max-width: 900px) {
+    .nav ul { display: none; }
+    .hero { min-height: 0; padding-top: 40px; }
+    .hero .wrap, .expect .wrap, .install .wrap { grid-template-columns: minmax(0, 1fr); }
+    .split-list, .lessons ol { grid-template-columns: minmax(0, 1fr); }
+    .row { grid-template-columns: minmax(0, 1fr); }
+    .split-list { gap: 0; }
+  }
+  @media (max-width: 520px) {
+    .hero .actions .btn { flex: 1 1 100%; }
+    .nav .end .btn--alt { display: none; }
+    .nav .wrap { gap: 12px; }
+    .nav .btn { padding: 0 10px; font-size: .82rem; }
+    .term pre { font-size: .8rem; padding: 16px; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <header>
-    <h1>electron-build-slim</h1>
-    <p class="lead">Ship smaller Electron apps without touching how they run. A drop-in replacement for the <code>electron-builder</code> command that packages only the <code>node_modules</code> your app actually loads.</p>
-    <div class="links">
-      <a class="primary" href="https://www.npmjs.com/package/electron-build-slim">npm</a>
-      <a href="https://github.com/bcong/electron-build-slim">GitHub</a>
-      <a href="https://github.com/bcong/electron-build-slim/releases">Releases</a>
-      <a href="https://github.com/bcong/electron-build-slim/tree/main/benchmarks">Benchmark data</a>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="mark" href="#main" aria-label="electron-build-slim, top of page">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" fill="currentColor"/><path d="M5 6h10M5 10h6.5M5 14h3" stroke="var(--bg)" stroke-width="2"/></svg>
+      electron-build-slim
+    </a>
+    <nav aria-label="Sections">
+      <ul>
+        <li><a class="ul" href="#expect">Savings</a></li>
+        <li><a class="ul" href="#results">Results</a></li>
+        <li><a class="ul" href="#removes">What it removes</a></li>
+        <li><a class="ul" href="#install">Install</a></li>
+      </ul>
+    </nav>
+    <div class="end">
+      <a class="btn btn--alt" href="https://github.com/bcong/electron-build-slim">GitHub</a>
+      <a class="btn btn--main" href="https://www.npmjs.com/package/electron-build-slim">Install from npm</a>
     </div>
-  </header>
-
-  <h2>Quick start</h2>
-  <pre><code>npm i -D electron-build-slim
-npx electron-build-slim --win          # instead of: electron-builder --win</code></pre>
-  <p>Your electron-builder config stays where it is. Arguments pass straight through; the tool only appends <code>files</code> exclusions and size settings, then checks that the packaged app can still load every dependency it shipped.</p>
-
-  <h2>Results on real apps</h2>
-  <p>Well-known open-source Electron apps, built from their public source on Windows x64 (NSIS), once with their own electron-builder setup and once with electron-build-slim at the default level.</p>
-  <div class="stats" id="stats"></div>
-  <div class="table-wrap"><table id="results"><thead><tr>
-    <th>App</th><th>Electron</th><th>electron-builder</th><th class="num">Installer before</th><th class="num">Installer after</th><th>Saved (default)</th><th>With opt-ins</th><th>Same screen</th>
-  </tr></thead><tbody></tbody></table></div>
-  <p class="note">Sizes in MiB, one build per variant (sizes are deterministic). "With opt-ins" adds <code>--slim-languages en-US --slim-strip-webgpu</code>, which changes the app's locale. "Same screen": the slimmed build launched, stayed alive, showed the same window title and text as the regular build, and the smoke check found nothing missing.</p>
-
-  <h2>What it removes, and what it never touches</h2>
-  <div class="grid2">
-    <div class="card"><h3>Removed by default</h3><p>Dependencies the app never loads (often the <code>electron</code> npm package itself, pulled in as a peer), build-only tools like <code>node-gyp</code>, docs/tests/C++ sources inside packages, and native binaries for other platforms.</p></div>
-    <div class="card"><h3>Opt-in</h3><p>Chromium locales (<code>--slim-languages</code>) and Windows WebGPU-only DLLs (<code>--slim-strip-webgpu</code>). These can change behavior, so you decide.</p></div>
-    <div class="card"><h3>Never</h3><p>Compression changes for formats that decompress at every launch (AppImage, snap), <code>asar: false</code>, UPX, or deleting Chromium runtime files.</p></div>
-    <div class="card"><h3>Verified</h3><p>After each build the packaged Electron runtime loads every shipped dependency. A missing file fails the build. If electron-builder fails, the tool cache is refreshed and the build retried once.</p></div>
   </div>
+</header>
 
-  <h2>Install</h2>
-  <pre><code>npm i -D electron-build-slim      # npmjs.com
+<main id="main">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap" data-enter>
+      <div>
+        <h1 id="hero-title">Leftover-file cleanup for Electron builds</h1>
+        <p class="sub">A drop-in replacement for the <code>electron-builder</code> command. Your config stays as it is; the tool leaves out the <code>node_modules</code> and files your app never loads, then starts the packaged app to check nothing it needs went missing.</p>
+        <p class="fact">On 10 open-source apps the unpacked build shrank by 0.0% to 20.7%, and every one opened to the same first screen.</p>
+        <div class="actions">
+          <a class="btn btn--main" href="https://www.npmjs.com/package/electron-build-slim">Install from npm</a>
+          <a class="btn btn--alt" href="#results">See the benchmark</a>
+        </div>
+      </div>
+      <div class="term" role="group" aria-label="Terminal commands">
+        <div class="term__bar"><i></i><i></i><i></i><span>your-app</span><button type="button" id="copy" aria-label="Copy the commands">copy</button></div>
+<pre><code id="cmds"><span class="p">$ </span>npm i -D electron-build-slim
+<span class="gap"></span><span class="c"># see what would be kept and dropped</span>
+<span class="p">$ </span>npx electron-build-slim <span class="k">plan</span> --win
+<span class="gap"></span><span class="c"># build, in place of: electron-builder --win</span>
+<span class="p">$ </span>npx electron-build-slim --win
+<span class="gap"></span><span class="c"># size of app.asar per package</span>
+<span class="p">$ </span>npx electron-build-slim <span class="k">report</span> dist/win-unpacked/resources/app.asar</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="expect" id="expect" aria-labelledby="expect-title">
+    <div class="wrap">
+      <h2 id="expect-title">Savings depend on what your build ships. <span class="muted">Some projects save nothing.</span></h2>
+      <div>
+        <p><strong>This package does not shrink every Electron app.</strong> It removes what is left behind in the package without being used: dependencies the app never loads, build tools, docs and tests inside packages, and binaries for other platforms.</p>
+        <p>It does not optimize or compress the code and assets your app needs, and it never trades a working feature for a smaller file. If your build already ships only what it uses, the size stays about the same; Pear Desktop and Super Productivity below saved 0.0%.</p>
+      </div>
+      <div class="split-list">
+        <div>
+          <h3>Removed when unused</h3>
+          <ul>
+            <li>Dependencies the app code never loads, often the <code>electron</code> package itself</li>
+            <li>Build-only tools such as <code>node-gyp</code> and <code>prebuild-install</code></li>
+            <li>Docs, tests and C/C++ sources inside packages</li>
+            <li>Native binaries for other operating systems and CPUs</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Left as it is</h3>
+          <ul>
+            <li>Every package the app loads, and the files inside it that run</li>
+            <li>Chromium runtime files, unless you opt in to dropping locales or WebGPU DLLs</li>
+            <li>Your electron-builder config and hooks</li>
+            <li>Startup speed: no UPX, no slower AppImage compression</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="results" id="results" aria-labelledby="results-title">
+    <div class="wrap">
+      <div class="head">
+        <h2 id="results-title">Results on 10 open-source apps</h2>
+        <p class="lede">Each app built from its public source on Windows x64 (NSIS), once with its own electron-builder setup and once with electron-build-slim at the default level.</p>
+      </div>
+      <div class="table-wrap">
+        <table id="results-table">
+          <thead><tr>
+            <th scope="col">App</th><th scope="col">Electron</th><th scope="col">electron-builder</th>
+            <th scope="col" class="num">Installer before</th><th scope="col" class="num">Installer after</th>
+            <th scope="col">Installer saved</th><th scope="col" class="num">With opt-ins</th><th scope="col">Same screen</th>
+          </tr></thead>
+          <tbody><tr><td colspan="8">Loading results.json</td></tr></tbody>
+        </table>
+      </div>
+      <p class="note">Sizes in MiB, one build per variant (sizes are deterministic). "With opt-ins" adds <code>--slim-languages en-US --slim-strip-webgpu</code>, which changes the app's locale. "Same screen" means the slimmed build launched, stayed open, showed the same window title and text as the regular build, and the smoke check found nothing missing. Raw data: <a class="ul" href="https://github.com/bcong/electron-build-slim/tree/main/benchmarks">benchmarks folder</a>.</p>
+    </div>
+  </section>
+
+  <section class="removes" id="removes" aria-labelledby="removes-title">
+    <div class="wrap">
+      <h2 id="removes-title">What runs by default, what you switch on</h2>
+      <div class="rows">
+        <div class="row"><h3>Default</h3><p>Unused dependencies, build-only tools, docs, tests and C/C++ sources inside packages, and native binaries for other platforms are added to electron-builder's <code>files</code> exclusions. Installer compression goes from <code>store</code> to <code>normal</code>.</p></div>
+        <div class="row"><h3>Opt-in</h3><p>Chromium locales with <code>--slim-languages</code> and Windows WebGPU-only DLLs with <code>--slim-strip-webgpu</code>. Both can change how the app behaves, so the tool never turns them on for you.</p></div>
+        <div class="row"><h3>Never</h3><p>Slower compression for formats that unpack on every launch (AppImage, snap), <code>asar: false</code>, UPX, or deleting Chromium runtime files such as <code>icudtl.dat</code> and <code>*.pak</code>.</p></div>
+        <div class="row"><h3>After every build</h3><p>The packaged Electron runtime loads each shipped dependency, and a missing file fails the build. If electron-builder itself fails, the tool cache is cleared and the build runs once more.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="install" id="install" aria-labelledby="install-title">
+    <div class="wrap">
+      <div>
+        <h2 id="install-title">Install and keep your config</h2>
+        <p class="lede">Arguments pass straight through to electron-builder. The tool appends exclusions and size settings and never rewrites your config file.</p>
+      </div>
+      <div>
+<pre class="code"><code>npm i -D electron-build-slim
 yarn add -D electron-build-slim
-pnpm add -D electron-build-slim
-
-# GitHub Packages (needs a token with read:packages)
+pnpm add -D electron-build-slim</code></pre>
+<pre class="code"><code><span class="c"># GitHub Packages, needs a token with read:packages</span>
 echo "@bcong:registry=https://npm.pkg.github.com" >> .npmrc
 npm i -D @bcong/electron-build-slim</code></pre>
+        <p class="note">Node.js 20.12 or newer, electron-builder 23 to 26, npm, yarn and pnpm. Run <code>report</code> on your current build first: if it lists <code>node_modules/electron</code>, <code>node-gyp</code> or renderer libraries like <code>react</code>, there is something to remove. If it does not, expect little change.</p>
+      </div>
+    </div>
+  </section>
 
-  <h2>Lessons from the benchmark</h2>
-  <ul class="plain">
-    <li>Apps whose own config already ships only what they need (Pear Desktop, Super Productivity) gain almost nothing by default. Apps that ship whole dependency trees gain the most.</li>
-    <li>A renderer with <code>nodeIntegration</code> can load packages with <code>window.require()</code>. LosslessCut does; the tool now keeps explicit <code>require("…")</code> calls found in the renderer.</li>
-    <li>Some apps disable the <code>RunAsNode</code> fuse; the smoke check runs a temporary copy with that fuse on.</li>
-    <li>Removing locales changes <code>app.getLocale()</code> and <code>navigator.language</code>, so apps that pick their language from it start in a kept language.</li>
-  </ul>
-
-  <footer>
-    MIT licensed: free to use, fork, modify and redistribute, including commercially. App names and trademarks belong to their owners; this project is not affiliated with them.
-    · <a href="https://github.com/bcong/electron-build-slim">github.com/bcong/electron-build-slim</a>
-  </footer>
+  <section class="lessons" id="lessons" aria-labelledby="lessons-title">
+    <div class="wrap">
+      <h2 id="lessons-title">Findings from the benchmark</h2>
+      <ol>
+        <li><strong>Tidy configs gain little</strong>Pear Desktop and Super Productivity already ship only what they need. Apps that ship whole dependency trees gain the most.</li>
+        <li><strong>Renderers can load packages too</strong>LosslessCut loads packages with <code>window.require()</code> from a <code>nodeIntegration</code> renderer, so explicit <code>require("…")</code> calls there are kept.</li>
+        <li><strong>Some apps turn off RunAsNode</strong>The smoke check runs a temporary copy with that fuse on, so it works on those apps as well.</li>
+        <li><strong>Fewer locales change the app's language</strong>Dropping locales changes <code>app.getLocale()</code> and <code>navigator.language</code>, which is why it stays opt-in.</li>
+      </ol>
+    </div>
+  </section>
 </main>
+
+<footer>
+  <div class="wrap">
+    <div class="top">
+      <p class="big">Run <code>plan</code> on your project to see what it would drop.</p>
+      <a class="btn btn--main" href="https://www.npmjs.com/package/electron-build-slim">Install from npm</a>
+    </div>
+    <nav aria-label="Project links">
+      <ul>
+        <li><a href="https://github.com/bcong/electron-build-slim">Source on GitHub</a></li>
+        <li><a href="https://github.com/bcong/electron-build-slim/releases">Releases</a></li>
+        <li><a href="https://github.com/bcong/electron-build-slim/issues">Issues</a></li>
+        <li><a href="https://github.com/bcong/electron-build-slim/tree/main/benchmarks">Benchmark data</a></li>
+      </ul>
+    </nav>
+    <div class="legal">
+      <p>electron-build-slim, MIT licence, 2026</p>
+      <p>App names and trademarks belong to their owners. This project is not affiliated with them.</p>
+    </div>
+  </div>
+</footer>
+
 <script>
   const mib = (bytes) => (bytes / 1048576).toFixed(1);
-  const pct = (after, before) => ((after - before) / before) * 100;
+  const pct = (after, before) => ((before - after) / before) * 100;
   const shown = (value) => (Math.abs(value) < 0.05 ? "0.0" : value.toFixed(1));
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
   fetch("results.json")
     .then((response) => response.json())
     .then(({ apps }) => {
-      const body = document.querySelector("#results tbody");
-      const maxGain = Math.max(...apps.map((app) => -pct(app.slim.installer, app.base.installer)), 1);
-      for (const app of apps) {
-        const gain = -pct(app.slim.installer, app.base.installer);
-        const opts = app.opts ? -pct(app.opts.installer, app.base.installer) : null;
+      const body = document.querySelector("#results-table tbody");
+      const max = Math.max(...apps.map((app) => pct(app.slim.installer, app.base.installer)), 1);
+      body.innerHTML = apps.map((app) => {
+        const gain = pct(app.slim.installer, app.base.installer);
+        const opts = app.opts ? pct(app.opts.installer, app.base.installer) : null;
         const ok = app.slim.sameScreen && app.slim.smokeFailures === 0;
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td><a href="https://github.com/${app.repo}">${app.name}</a> <span class="note">v${app.version}</span></td>
-          <td>${app.electron ?? ""}</td>
-          <td>${app.electronBuilder}</td>
+        const zero = Math.abs(gain) < 0.05;
+        return `<tr>
+          <td><a href="https://github.com/${esc(app.repo)}">${esc(app.name)}</a><span class="ver">v${esc(app.version)}</span></td>
+          <td>${esc(app.electron ?? "")}</td>
+          <td>${esc(app.electronBuilder)}</td>
           <td class="num">${mib(app.base.installer)}</td>
           <td class="num">${mib(app.slim.installer)}</td>
-          <td><span class="gain">${shown(gain)}%</span><div class="bar"><i style="width:${Math.max(2, (Math.max(gain, 0) / maxGain) * 100)}%"></i></div></td>
-          <td>${opts == null ? "" : `<span class="gain">${shown(opts)}%</span>`}</td>
-          <td>${ok ? "✅" : "⚠️"}</td>`;
-        body.appendChild(row);
-      }
-      const saved = apps.reduce((sum, app) => sum + (app.base.unpacked - app.slim.unpacked), 0);
-      const best = apps.reduce((a, b) => (pct(a.slim.unpacked, a.base.unpacked) < pct(b.slim.unpacked, b.base.unpacked) ? a : b));
-      const allOk = apps.every((app) => app.slim.sameScreen && app.slim.smokeFailures === 0);
-      document.querySelector("#stats").innerHTML = `
-        <div class="stat"><b>${apps.length}</b><span>open-source apps measured</span></div>
-        <div class="stat"><b>${(saved / 1048576).toFixed(0)} MiB</b><span>unpacked size removed in total</span></div>
-        <div class="stat"><b>${(-pct(best.slim.unpacked, best.base.unpacked)).toFixed(1)}%</b><span>largest unpacked cut (${best.name})</span></div>
-        <div class="stat"><b>${allOk ? "All" : "Not all"}</b><span>slimmed builds showed the same screen</span></div>`;
+          <td><div class="saved${zero ? " zero" : ""}"><b>${shown(gain)}%</b><span class="bar"><i style="width:${Math.max(zero ? 0 : 2, (Math.max(gain, 0) / max) * 100)}%"></i></span></div></td>
+          <td class="num">${opts == null ? "" : `${shown(opts)}%`}</td>
+          <td>${ok ? "Yes" : "No"}</td>
+        </tr>`;
+      }).join("");
     })
     .catch(() => {
-      document.querySelector("#results tbody").innerHTML = '<tr><td colspan="8">Could not load results.json.</td></tr>';
+      document.querySelector("#results-table tbody").innerHTML = '<tr><td colspan="8">Could not load results.json. The same numbers are in the README.</td></tr>';
     });
+
+  const copy = document.getElementById("copy");
+  copy.addEventListener("click", () => {
+    const text = document.getElementById("cmds").innerText
+      .split("\n").filter((line) => line.startsWith("$ ")).map((line) => line.slice(2)).join("\n");
+    navigator.clipboard?.writeText(text).then(() => {
+      copy.textContent = "copied";
+      setTimeout(() => (copy.textContent = "copy"), 1600);
+    });
+  });
 </script>
 </body>
 </html>

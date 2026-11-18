@@ -7,6 +7,8 @@ description: Use when shrinking an Electron app's installer or AppImage without 
 
 The tool is the npm package `electron-build-slim` (see its README). Work in this order, and keep the numbers and output of each step as evidence.
 
+Set expectations with the user first: the tool does not always make a build smaller. It only removes files that are shipped without being used (unloaded dependencies, build tools, docs and tests, other-platform binaries). It does not optimize what the app needs, and it never removes something at the cost of a working feature. If the baseline report shows nothing unused, say the gain will be small or none instead of promising a size.
+
 ## 1. Measure the baseline
 
 1. Build once with the current setup. Record the installer size in bytes, the size of `*-unpacked`, and the packaging time.

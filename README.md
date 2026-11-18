@@ -13,6 +13,13 @@ npm i -D electron-build-slim
 npx electron-build-slim --win          # instead of: electron-builder --win
 ```
 
+> [!IMPORTANT]
+> **This package does not always make your Electron app smaller.** How much it saves differs from project to project, and some projects save nothing.
+>
+> It removes what is left behind in the package without being used: dependencies the app never loads, build-only tools, docs and tests inside packages, and native binaries for other platforms. It does **not** optimize or compress the code and assets your app needs, and it is built never to remove anything at the cost of a working feature. If your build already ships only what it uses, the size stays about the same (two of the ten benchmarked apps below saved 0.0%).
+>
+> Run `npx electron-build-slim report <unpacked>/resources/app.asar` on your current build first to see whether there is anything to remove.
+
 ## What it removes
 
 | Removed | Default | Effect on runtime |
@@ -26,7 +33,7 @@ npx electron-build-slim --win          # instead of: electron-builder --win
 
 **Never done:** changing the compression of formats that decompress on every launch (AppImage, snap), turning off `asar`, UPX, or deleting Chromium runtime files such as swiftshader, `icudtl.dat` or `*.pak`.
 
-How much you save depends on the app. Apps that accidentally ship large packages save a lot; apps with few dependencies barely change. A common cause is the `electron` npm package itself (about 340 MB unpacked on Windows) being shipped a second time because some dependency lists it as a peer dependency.
+How much you save depends on the app. Apps that accidentally ship large packages save a lot; apps that already ship only what they use barely change or do not change at all. A common cause is the `electron` npm package itself (about 340 MB unpacked on Windows) being shipped a second time because some dependency lists it as a peer dependency.
 
 <!-- BENCHMARKS -->
 ## Benchmarks

@@ -4,6 +4,10 @@ All notable changes to this project are documented here. This project follows [S
 
 ## [Unreleased]
 
+### Changed
+
+- Project site redesigned, and the README, site and agent skill now state up front that savings depend on the project: the tool removes unused leftovers and does not optimize files the app needs.
+
 ## [0.1.0] - 2026-11-18
 
 First public release, verified on 10 open-source Electron apps (see `benchmarks/`).
