@@ -1,6 +1,6 @@
 // Builds one app with its own electron-builder and with electron-build-slim, then compares sizes, the smoke check and a real launch.
 // Usage: node benchmarks/bench.cjs --app <app folder> --name <id> [--args "<electron-builder args>"] [--slim-args "<--slim-* args>"]
-//            [--wait 15] [--skip-base] [--skip-build] [--out <results folder>]
+//            [--wait 15] [--skip-base] [--skip-build] [--out <results folder>] [--smoke-root <app folder for two-package.json layouts>]
 // Install the app's dependencies and run its bundle/compile step first. Results go to <out>/<id>/ (default: benchmarks/results).
 "use strict";
 const { spawn, spawnSync, execFileSync } = require("node:child_process");
@@ -24,6 +24,7 @@ const name = opt("name");
 const builderArgs = (opt("args", "--win --x64") ?? "").split(" ").filter(Boolean);
 const slimArgs = (opt("slim-args", "") ?? "").split(" ").filter(Boolean);
 const waitSeconds = Number(opt("wait", "15"));
+const smokeRoot = path.resolve(opt("smoke-root", opt("app", ".")));
 if (!opt("app") || !name) throw new Error("--app and --name are required");
 
 const resultDir = path.resolve(opt("out", path.join(__dirname, "results")), name);
@@ -209,8 +210,8 @@ const main = async () => {
         if (build.status === 0 && size.unpackedDir) {
             entry.smoke = smoke({
                 appDir: size.unpackedDir,
-                packages: packagedRootDependencies(app, size.unpackedDir),
-                shipped: productionPackages(app),
+                packages: packagedRootDependencies(smokeRoot, size.unpackedDir),
+                shipped: productionPackages(smokeRoot),
             });
             entry.launch = await launch(size.unpackedDir, variant, port);
         }
