@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { test } = require("node:test");
-const { analyze, packagerIgnore, targetsFromArgv } = require("../index.cjs");
+const { analyze, packagerIgnore, productionPackages, targetsFromArgv } = require("../index.cjs");
 
 // Fake project: used, unused, undeclared and build-only dependencies, plus a native module with prebuilds.
 const makeProject = (files) => {
@@ -106,6 +106,26 @@ test("packager ignore regexes", () => {
         ["/lib/a.js", false],
     ];
     for (const [file, expected] of cases) assert.equal(ignored(file), expected, file);
+});
+
+test("productionPackages lists what a regular build ships, without peers", () => {
+    const shipped = productionPackages(fixture());
+    assert.ok(shipped.has("used") && shipped.has("unused-child") && shipped.has("node-addon-api"));
+    assert.ok(!shipped.has("electron"));
+});
+
+test("electron-vite: keeps packages a nodeIntegration renderer requires, not bundled ones", () => {
+    const root = makeProject({
+        "package.json": pkg("app", { dependencies: { used: "1", "renderer-native": "1", react: "1" } }),
+        "out/main/index.js": 'require("used");',
+        "out/renderer/assets/index.js": 'const cue = window.require("renderer-native"); /* bundled: react */',
+        "node_modules/used/package.json": pkg("used"),
+        "node_modules/renderer-native/package.json": pkg("renderer-native"),
+        "node_modules/react/package.json": pkg("react"),
+    });
+    const result = analyze({ root, targets: { win: ["x64"] } });
+    assert.deepEqual(result.keep, ["renderer-native", "used"]);
+    assert.deepEqual(result.drop, ["react"]);
 });
 
 test("reads targets from electron-builder CLI arguments", () => {

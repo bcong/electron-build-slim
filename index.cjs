@@ -175,6 +175,18 @@ const entryDependencies = (root, rootPkg, entries) => {
     });
 };
 
+// A nodeIntegration renderer loads unbundled dependencies with window.require("name"). Bundled code leaves no such calls,
+// so only explicit require calls count here, not bare names (that would pull bundled packages such as react back in).
+const rendererRequires = (root, rootPkg) => {
+    const sources = walkFiles(path.join(root, "out/renderer"))
+        .filter((file) => ENTRY_FILE.test(file))
+        .map((file) => fs.readFileSync(file, "latin1"));
+    return rootDependencies(rootPkg).filter((name) => {
+        const pattern = new RegExp(`require\\s*\\(\\s*["']${escapeRegExp(name)}(?:/[^"']*)?["']`);
+        return sources.some((source) => pattern.test(source));
+    });
+};
+
 // Adds root dependencies that kept packages require/import without declaring them (common with patches), until nothing new is found.
 const runtimeClosure = (root, rootPkg, starts, neverShip) => {
     const codeByDir = new Map();
@@ -220,13 +232,26 @@ const foreignPrebuilds = (dir, platform, archs) => {
         .map((name) => path.join(prebuilds, name));
 };
 
-// Source-only folders (src, deps) that contain no runtime files (.js/.json/.node).
-const sourceOnlyDirs = (dir) =>
-    ["src", "deps"]
-        .map((name) => path.join(dir, name))
-        .filter((sub) => fs.existsSync(sub) && !walkFiles(sub).some((file) => RUNTIME_FILE.test(file)));
+// pnpm keeps packages in node_modules/.pnpm/<id>/node_modules/<name>, while electron-builder matches node_modules/<name>,
+// so that prefix is stripped. Patterns then apply to every copy with the same path.
+const relativeToNodeModules = (root, dir) =>
+    toPosix(path.relative(path.join(root, "node_modules"), dir)).replace(/^\.pnpm\/[^/]+\/node_modules\//, "");
 
-const relativeToNodeModules = (root, dir) => toPosix(path.relative(path.join(root, "node_modules"), dir));
+// Source-only folders (src, deps) with no runtime files (.js/.json/.node). Since a pattern covers every copy with the same
+// path, a folder is excluded only if it is source-only in all of them.
+const sourceOnlyFolders = (root, dirs) => {
+    const folders = new Map();
+    for (const dir of dirs) {
+        for (const name of ["src", "deps"]) {
+            const sub = path.join(dir, name);
+            if (!fs.existsSync(sub)) continue;
+            const relative = relativeToNodeModules(root, sub);
+            const sourceOnly = !walkFiles(sub).some((file) => RUNTIME_FILE.test(file));
+            folders.set(relative, (folders.get(relative) ?? true) && sourceOnly);
+        }
+    }
+    return [...folders].filter(([, sourceOnly]) => sourceOnly).map(([relative]) => relative);
+};
 const excludeGlob = (relative) => `!**/node_modules/${relative}{,/**/*}`;
 
 /**
@@ -243,12 +268,13 @@ const analyze = ({ root = process.cwd(), targets = hostTarget(), entries, keep =
     const rootPkg = readJson(path.join(root, "package.json"));
     const never = new Set([...NEVER_SHIP, ...neverShip]);
     const entryDirs = entries ?? defaultEntries(root);
-    const starts = [...new Set([...entryDependencies(root, rootPkg, entryDirs), ...keep])];
+    const renderer = entries == null && entryDirs.includes("out/main") ? rendererRequires(root, rootPkg) : [];
+    const starts = [...new Set([...entryDependencies(root, rootPkg, entryDirs), ...renderer, ...keep])];
     const { runtime, undeclared } = runtimeClosure(root, rootPkg, starts, never);
     const shipped = closure(root, rootDependencies(rootPkg), { withPeers: true, neverShip: never });
     const kept = new Set(runtime.values());
     const drop = [...new Set(shipped.values())].filter((name) => !kept.has(name)).sort();
-    const sourceOnly = [...runtime.keys()].flatMap(sourceOnlyDirs).map((dir) => relativeToNodeModules(root, dir));
+    const sourceOnly = sourceOnlyFolders(root, [...runtime.keys()]);
     const prebuilds = Object.fromEntries(
         Object.entries(targets).map(([platform, archs]) => [
             platform,
@@ -279,6 +305,15 @@ const analyze = ({ root = process.cwd(), targets = hostTarget(), entries, keep =
         ],
     };
 };
+
+// Package names a regular electron-builder build ships: root dependencies (+optional) and their children, without peers.
+const productionPackages = (root = process.cwd()) =>
+    new Set(
+        closure(root, rootDependencies(readJson(path.join(root, "package.json"))), {
+            withPeers: false,
+            neverShip: new Set(),
+        }).values(),
+    );
 
 const hostArch = () => (process.arch === "arm" ? "armv7l" : process.arch);
 const hostPlatform = () => Object.keys(NODE_PLATFORM).find((key) => NODE_PLATFORM[key] === process.platform);
@@ -333,4 +368,14 @@ const packagerIgnore = (options = {}) => {
     ];
 };
 
-module.exports = { analyze, pruneFiles, packagerIgnore, targetsFromArgv, hostPlatform, hostArch, NODE_PLATFORM, JUNK };
+module.exports = {
+    analyze,
+    productionPackages,
+    pruneFiles,
+    packagerIgnore,
+    targetsFromArgv,
+    hostPlatform,
+    hostArch,
+    NODE_PLATFORM,
+    JUNK,
+};

@@ -101,7 +101,11 @@ if (command === "--help" || command === "-h" || command === "help") {
     const [appDir, ...packages] = others;
     if (!appDir) throw new Error(USAGE);
     const names = packages.length > 0 ? packages : packagedRootDependencies(process.cwd(), path.resolve(appDir));
-    const result = smoke({ appDir, packages: names });
+    const result = smoke({
+        appDir,
+        packages: names,
+        shipped: require("../index.cjs").productionPackages(process.cwd()),
+    });
     console.log(`${result.ok.length} ok, ${result.failed.length} failed, ${result.warnings.length} warnings`);
     for (const line of [...result.failed.map((l) => `failed  ${l}`), ...result.warnings.map((l) => `warning ${l}`)])
         console.log(`  ${line}`);

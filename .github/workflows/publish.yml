@@ -1,25 +1,94 @@
 name: publish
 
-# Publishes to npm when a GitHub release is published. Uses npm Trusted Publishing (OIDC), so no token or OTP is needed.
-# Register this repository and publish.yml under the package's Trusted Publisher settings on npmjs.com.
+# Publishes a GitHub release to npmjs.com and to GitHub Packages.
+# - npmjs.com uses npm Trusted Publishing (OIDC): register this repository and publish.yml under the package's
+#   "Trusted Publisher" settings on npmjs.com. No token or OTP is stored here. Versions already on npm are skipped.
+# - GitHub Packages only accepts names scoped to the owner, so it is published as @bcong/electron-build-slim.
 on:
   release:
     types: [published]
-
-permissions:
-  contents: read
-  id-token: write
+  workflow_dispatch:
 
 jobs:
-  publish:
+  test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm test
+      - name: Check version matches tag
+        if: github.event_name == 'release'
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+
+  npmjs:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-      - run: npm test
-      - name: Check version matches tag
-        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
-      - run: npm publish --provenance --access public
+      - name: Skip if this version is already on npm
+        id: check
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "electron-build-slim@${VERSION}" version >/dev/null 2>&1; then
+            echo "electron-build-slim@${VERSION} is already published"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.check.outputs.skip != 'true'
+        run: npm publish --provenance --access public
+
+  github-packages:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: "@bcong"
+      - run: npm pkg set name=@bcong/electron-build-slim
+      - name: Skip if this version is already on GitHub Packages
+        id: check
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "@bcong/electron-build-slim@${VERSION}" version >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.check.outputs.skip != 'true'
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-asset:
+    needs: test
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Attach the npm tarball to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          npm pack
+          gh release upload "${GITHUB_REF_NAME}" ./*.tgz --clobber

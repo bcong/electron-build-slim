@@ -4,6 +4,26 @@ All notable changes to this project are documented here. This project follows [S
 
 ## [Unreleased]
 
+### Fixed
+
+- `--slim-strip-webgpu` failed on electron-builder 24 because it used the `afterExtract` hook (added in 25). It now chains `afterPack`.
+- Config validation errors no longer clear the tool cache and retry.
+- The smoke check no longer fails on packages a regular build does not ship either (such as peers that are only devDependencies).
+- electron-vite apps whose renderer uses `nodeIntegration` lost packages loaded with `window.require()` (LosslessCut opened to a black window). Explicit `require("…")` calls in `out/renderer` are now kept.
+- The smoke check started the GUI and timed out on apps that disable the `RunAsNode` fuse. It now runs a temporary copy with that fuse on.
+- Two-package.json apps (`directories.app`, e.g. Hyper with `target/`) were analyzed against the root `package.json`, so packages the app needs were dropped and the app crashed with `Cannot find module 'lodash'`. The app folder electron-builder packages is now analyzed and smoke-checked.
+- The exclusions now go in a temporary config that `extends` the user's config, so they always come after the user's `files` patterns. Before, a `files` list ending in a `{from, to}` object (Mattermost) let later include patterns bring the excluded files back.
+- `--slim-languages` is skipped with a note on electron-builder < 24, which has no `electronLanguages` option.
+- electron-builder < 24 ships `asar` instead of `@electron/asar`; both are supported.
+- pnpm's default isolated layout: `app-builder-lib` and `@electron/asar` are now found through electron-builder's real folder, and exclusion paths no longer carry the `.pnpm/<id>/node_modules/` prefix (so they actually match).
+- A failed electron-builder run could exit with code 0 because `async-exit-hook` overwrote the exit code, so the cache retry never ran.
+
+### Added
+
+- `productionPackages()` export.
+- A note when electron-builder is older than 26, which can still ship nested copies of dropped packages.
+- Docs: `--slim-languages` also changes the app's locale.
+
 ## [0.1.0]
 
 First public release.

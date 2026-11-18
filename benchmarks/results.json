@@ -1,0 +1,289 @@
+{
+    "platform": "win32-x64",
+    "target": "nsis",
+    "apps": [
+        {
+            "id": "caprine",
+            "name": "Caprine",
+            "repo": "sindresorhus/caprine",
+            "tag": "v2.61.0",
+            "electron": "29.0.1",
+            "pm": "npm",
+            "version": "2.61.0",
+            "electronBuilder": "24.12.0",
+            "base": {
+                "installer": 82253540,
+                "unpacked": 297583687,
+                "smokeFailures": 0
+            },
+            "slim": {
+                "installer": 80019990,
+                "unpacked": 282162510,
+                "smokeFailures": 0,
+                "sameScreen": true,
+                "firstWindowSeconds": 1.01
+            },
+            "opts": {
+                "installer": 73115766,
+                "unpacked": 243694521,
+                "smokeFailures": 0,
+                "launched": true
+            }
+        },
+        {
+            "id": "heroicgameslauncher",
+            "name": "Heroic Games Launcher",
+            "repo": "Heroic-Games-Launcher/HeroicGamesLauncher",
+            "tag": "v2.22.4",
+            "electron": "43.1.1",
+            "pm": "pnpm (hoisted)",
+            "version": "2.22.4",
+            "electronBuilder": "26.8.1",
+            "base": {
+                "installer": 154803365,
+                "unpacked": 451258161,
+                "smokeFailures": 0
+            },
+            "slim": {
+                "installer": 154353727,
+                "unpacked": 448210336,
+                "smokeFailures": 0,
+                "sameScreen": true,
+                "firstWindowSeconds": 1.042
+            },
+            "opts": {
+                "installer": 138943555,
+                "unpacked": 372741173,
+                "smokeFailures": 0,
+                "launched": true
+            }
+        },
+        {
+            "id": "hyper",
+            "name": "Hyper",
+            "repo": "vercel/hyper",
+            "tag": "v3.4.1",
+            "electron": "20.3.6",
+            "pm": "yarn 1",
+            "run": "hyper-final",
+            "opts": {
+                "installer": 73190222,
+                "unpacked": 263227352,
+                "smokeFailures": 0,
+                "launched": true
+            },
+            "appSubdir": "target",
+            "version": "3.4.1",
+            "electronBuilder": "23.3.3",
+            "base": {
+                "installer": 74362995,
+                "unpacked": 272859673,
+                "smokeFailures": 0
+            },
+            "slim": {
+                "installer": 73190156,
+                "unpacked": 263227352,
+                "smokeFailures": 0,
+                "sameScreen": true,
+                "firstWindowSeconds": 1.004
+            }
+        },
+        {
+            "id": "losslesscut",
+            "name": "LosslessCut",
+            "repo": "mifi/lossless-cut",
+            "tag": "v3.70.2",
+            "electron": "42.11.15",
+            "pm": "yarn 4",
+            "slim": {
+                "installer": 181255503,
+                "unpacked": 624580999,
+                "smokeFailures": 0,
+                "sameScreen": true,
+                "firstWindowSeconds": 1.027
+            },
+            "opts": {
+                "installer": 165420065,
+                "unpacked": 548534220,
+                "smokeFailures": 0,
+                "launched": true
+            },
+            "version": "3.70.2",
+            "electronBuilder": "26.16.1",
+            "base": {
+                "installer": 187381364,
+                "unpacked": 661421090,
+                "smokeFailures": 0
+            }
+        },
+        {
+            "id": "mattermost",
+            "name": "Mattermost Desktop",
+            "repo": "mattermost/desktop",
+            "tag": "v6.4.0",
+            "electron": "45.2.1",
+            "pm": "npm",
+            "run": "mattermost-final",
+            "opts": {
+                "installer": 105327154,
+                "unpacked": 309385101,
+                "smokeFailures": 0,
+                "launched": true
+            },
+            "version": "6.4.0",
+            "electronBuilder": "26.6.0",
+            "base": {
+                "installer": 120824607,
+                "unpacked": 387823812,
+                "smokeFailures": 0
+            },
+            "slim": {
+                "installer": 120458578,
+                "unpacked": 385767080,
+                "smokeFailures": 0,
+                "sameScreen": true,
+                "firstWindowSeconds": 1.002
+            }
+        },
+        {
+            "id": "peardesktop",
+            "name": "Pear Desktop (YouTube Music)",
+            "repo": "pear-devs/pear-desktop",
+            "tag": "v3.12.1",
+            "electron": "45.3.2",
+            "pm": "pnpm (isolated)",
+            "version": "3.12.1",
+            "electronBuilder": "26.18.0",
+            "base": {
+                "installer": 133447554,
+                "unpacked": 418741704,
+                "smokeFailures": 0
+            },
+            "slim": {
+                "installer": 133441942,
+                "unpacked": 418741013,
+                "smokeFailures": 0,
+                "sameScreen": true,
+                "firstWindowSeconds": 1.004
+            },
+            "opts": {
+                "installer": 117881561,
+                "unpacked": 342358566,
+                "smokeFailures": 0,
+                "launched": true
+            }
+        },
+        {
+            "id": "rocketchat",
+            "name": "Rocket.Chat Desktop",
+            "repo": "RocketChat/Rocket.Chat.Electron",
+            "tag": "4.19.3",
+            "electron": "43.8.1",
+            "pm": "yarn 4",
+            "version": "4.19.3",
+            "electronBuilder": "26.0.3",
+            "base": {
+                "installer": 119045036,
+                "unpacked": 487682245,
+                "smokeFailures": 0
+            },
+            "slim": {
+                "installer": 115999189,
+                "unpacked": 454742790,
+                "smokeFailures": 0,
+                "sameScreen": true,
+                "firstWindowSeconds": 1.004
+            },
+            "opts": {
+                "installer": 100683777,
+                "unpacked": 379277152,
+                "smokeFailures": 0,
+                "launched": true
+            }
+        },
+        {
+            "id": "stretchly",
+            "name": "Stretchly",
+            "repo": "hovancik/stretchly",
+            "tag": "v1.22.1",
+            "electron": "43.4.0",
+            "pm": "npm",
+            "version": "1.22.1",
+            "electronBuilder": "26.15.7",
+            "base": {
+                "installer": 162870400,
+                "unpacked": 467507999,
+                "smokeFailures": 0
+            },
+            "slim": {
+                "installer": 161917996,
+                "unpacked": 460170466,
+                "smokeFailures": 0,
+                "sameScreen": true,
+                "firstWindowSeconds": 1.004
+            },
+            "opts": {
+                "installer": 146061406,
+                "unpacked": 384698720,
+                "smokeFailures": 0,
+                "launched": true
+            }
+        },
+        {
+            "id": "superproductivity",
+            "name": "Super Productivity",
+            "repo": "johannesjo/super-productivity",
+            "tag": "v20.0.0",
+            "electron": "44.10.0",
+            "pm": "npm",
+            "version": "20.0.0",
+            "electronBuilder": "26.16.1",
+            "base": {
+                "installer": 133639593,
+                "unpacked": 442686023,
+                "smokeFailures": 0
+            },
+            "slim": {
+                "installer": 133616492,
+                "unpacked": 442647328,
+                "smokeFailures": 0,
+                "sameScreen": true,
+                "firstWindowSeconds": 1.004
+            },
+            "opts": {
+                "installer": 117413592,
+                "unpacked": 365336307,
+                "smokeFailures": 0,
+                "launched": true
+            }
+        },
+        {
+            "id": "upscayl",
+            "name": "Upscayl",
+            "repo": "upscayl/upscayl",
+            "tag": "v2.15.0",
+            "electron": "27.3.10",
+            "pm": "npm",
+            "version": "2.15.0",
+            "electronBuilder": "24.13.3",
+            "base": {
+                "installer": 263351636,
+                "unpacked": 627064444,
+                "smokeFailures": 0
+            },
+            "slim": {
+                "installer": 245385989,
+                "unpacked": 497054361,
+                "smokeFailures": 0,
+                "sameScreen": true,
+                "firstWindowSeconds": 1.002
+            },
+            "opts": {
+                "installer": 238886034,
+                "unpacked": 461098355,
+                "smokeFailures": 0,
+                "launched": true
+            }
+        }
+    ]
+}
